@@ -74,6 +74,30 @@ class PRAnalyzer:
         for pr in self.valid_prs:
             self.pr_to_meta[pr] = _get_pr_meta_info(pr)
 
+    def get_summary_stats(self):
+        pr_rows = []
+        for pr, meta in self.pr_to_meta.items():
+            if not pr.merged_at:
+                continue
+            pr_rows.append([meta.review_passes, meta.hours_to_merge, meta.total_changes, len(meta.reviewers)])
+        pr_df = pd.DataFrame(pr_rows, columns=["review_passes", "hours_to_merge", "total_changes", "num_reviewers"])
+        summary_rows = []
+        for col in pr_df.columns:
+            summary_rows.append(
+                [
+                    col,
+                    pr_df[col].mean(),
+                    pr_df[col].median(),
+                    pr_df[col].quantile(0.9),
+                    pr_df[col].min(),
+                    pr_df[col].max(),
+                ]
+            )
+        summary_df = pd.DataFrame(summary_rows, columns=["name", "mean", "median", "p90", "min", "max"]).set_index(
+            "name"
+        )
+        return summary_df
+
     def plot_hours_to_merge_histogram(self, max_hours=120, bins=40):
         hours_to_merge = [min(max_hours, self.pr_to_meta[pr].hours_to_merge) for pr in self.valid_prs if pr.merged_at]
         df = pd.DataFrame({"hours_to_merge": hours_to_merge})
@@ -181,7 +205,7 @@ class PRAnalyzer:
         for pr, meta in self.pr_to_meta.items():
             if not pr.merged_at:
                 continue
-            for reviewer in meta.reviewer:
+            for reviewer in meta.reviewers:
                 if reviewer not in self.team_users:
                     continue
                 author_reviewer_hours_to_merge[(pr.user.login, reviewer.login)].append(
