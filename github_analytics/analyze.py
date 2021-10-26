@@ -238,7 +238,7 @@ class PRAnalyzer:
             color="author",
             title="PR Hours To Merge vs Total Changes ({})".format(self.org_team_name),
         )
-        return fig
+        return fig, df
 
     def plot_review_passes_by_author_boxplot(self):
         passes = [self.pr_to_meta[pr].review_passes for pr in self.valid_prs if pr.merged_at]
